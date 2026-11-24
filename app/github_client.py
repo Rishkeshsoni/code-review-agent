@@ -14,11 +14,7 @@ print(x)
 
 
 def parse_repo_name(repo_url: str) -> str:
-    return (
-        repo_url.replace("https://github.com/", "")
-        .replace(".git", "")
-        .strip("/")
-    )
+    return repo_url.replace("https://github.com/", "").replace(".git", "").strip("/")
 
 
 def _client() -> Github:

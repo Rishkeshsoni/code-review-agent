@@ -31,8 +31,9 @@ def test_lint_tool_clean_code():
 
 
 def test_rejection_rolls_back_to_refactor():
-    with patch("app.nodes.fetch_python_file", return_value=("a.py", "x=1\n")), \
-         patch("app.nodes.commit_file") as commit:
+    with patch("app.nodes.fetch_python_file", return_value=("a.py", "x=1\n")), patch(
+        "app.nodes.commit_file"
+    ) as commit:
         g = build_graph(MemorySaver())
         cfg = _cfg("t1")
         g.invoke(INIT, cfg)
@@ -55,8 +56,9 @@ def test_rejection_rolls_back_to_refactor():
 
 
 def test_approval_commits_and_finishes():
-    with patch("app.nodes.fetch_python_file", return_value=("a.py", "x=1\n")), \
-         patch("app.nodes.commit_file") as commit:
+    with patch("app.nodes.fetch_python_file", return_value=("a.py", "x=1\n")), patch(
+        "app.nodes.commit_file"
+    ) as commit:
         g = build_graph(MemorySaver())
         cfg = _cfg("t2")
         g.invoke(INIT, cfg)
@@ -64,4 +66,3 @@ def test_approval_commits_and_finishes():
         g.invoke(None, cfg)
         assert g.get_state(cfg).next == ()
         commit.assert_called_once()
-        
