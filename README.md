@@ -1,6 +1,6 @@
 # Autonomous Code Review & Refactoring Agent
 
-An automated code review and refactoring agent built using Python, LangGraph, and FastAPI. The project uses a structured workflow to analyze code, identify linting issues, suggest improvements, and apply changes only after human approval.
+An automated code review and refactoring agent built using Python, LangGraph, and FastAPI. It follows a structured workflow to analyze code, identify linting issues, format code, and apply changes only after human approval.
 
 ## Features
 
@@ -12,7 +12,7 @@ An automated code review and refactoring agent built using Python, LangGraph, an
 - Rollback support for rejected changes
 - GitHub integration using PyGithub
 - REST API endpoints using FastAPI
-- Demo mode without requiring API credentials
+- Demo mode without API credentials
 - Unit testing using Pytest
 
 ## Tech Stack
@@ -82,7 +82,7 @@ These credentials are optional for running the application in demo mode.
 uvicorn main:app
 ```
 
-Open Swagger UI in your browser:
+Open Swagger UI:
 
 http://127.0.0.1:8000/docs
 
@@ -113,4 +113,4 @@ The application supports demo mode when API credentials are not configured. It u
 
 **Rishikesh Soni**
 
-GitHub: https://github.com/Rishkeshsoni
+GitHub: [Rishkeshsoni](https://github.com/Rishkeshsoni)
