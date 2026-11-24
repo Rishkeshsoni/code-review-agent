@@ -72,12 +72,13 @@ def approve_review(thread_id: str, body: ApprovalPayload):
     if body.approved:
         graph.update_state(config, {"is_approved": True})
     else:
-        # rollback: pretend lint just finished, so graph re-runs propose_refactor_node
+        # Roll back to the lint node so the graph reruns
+        # propose_refactor_node.
         graph.update_state(
             config,
             {
                 "is_approved": False,
-                "reviewer_feedback": body.feedback or "Please improve the refactor",
+                "reviewer_feedback": (body.feedback or "Please improve the refactor"),
             },
             as_node="lint_code_node",
         )
