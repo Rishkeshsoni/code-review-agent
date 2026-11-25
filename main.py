@@ -1,3 +1,4 @@
+
 import logging
 import uuid
 from typing import Optional
@@ -23,16 +24,23 @@ class ApprovalPayload(BaseModel):
 
 def _summary(thread_id, config):
     snap = graph.get_state(config)
-    status = "awaiting_approval" if snap.next else "completed"
-    v = snap.values
+    status = (
+        "awaiting_approval"
+        if "apply_changes_node" in snap.next
+        else "completed"
+    )
+
+    values = snap.values
+
     logger.info("Thread %s status: %s", thread_id, status)
+
     return {
         "thread_id": thread_id,
         "status": status,
         "next": list(snap.next),
-        "lint_errors": v.get("lint_errors"),
-        "refactored_code": v.get("refactored_code"),
-        "history": v.get("history"),
+        "lint_errors": values.get("lint_errors"),
+        "refactored_code": values.get("refactored_code"),
+        "history": values.get("history", []),
     }
 
 
@@ -40,25 +48,39 @@ def _summary(thread_id, config):
 def github_webhook(payload: dict):
     repo = payload.get("repository") or {}
     pr = payload.get("pull_request") or {}
+
     repo_url = repo.get("html_url") or payload.get("repo_url")
     branch = (pr.get("head") or {}).get("ref") or payload.get("branch")
+
     if not repo_url or not branch:
-        raise HTTPException(400, "repo_url and branch are required")
+        raise HTTPException(
+            status_code=400,
+            detail="repo_url and branch are required",
+        )
 
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
-    graph.invoke(
-        {
-            "pr_url": pr.get("html_url") or repo_url,
-            "repo_url": repo_url,
-            "branch": branch,
-            "pr_number": pr.get("number") or payload.get("pr_number"),
-            "history": [],
-            "is_approved": False,
-            "reviewer_feedback": "",
-        },
-        config,
-    )
+
+    try:
+        graph.invoke(
+            {
+                "pr_url": pr.get("html_url") or repo_url,
+                "repo_url": repo_url,
+                "branch": branch,
+                "pr_number": pr.get("number") or payload.get("pr_number"),
+                "history": [],
+                "is_approved": False,
+                "reviewer_feedback": "",
+            },
+            config,
+        )
+    except Exception as error:
+        logger.exception("GitHub webhook processing failed")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Review processing failed: {type(error).__name__}",
+        ) from error
+
     return _summary(thread_id, config)
 
 
@@ -66,21 +88,49 @@ def github_webhook(payload: dict):
 def approve_review(thread_id: str, body: ApprovalPayload):
     config = {"configurable": {"thread_id": thread_id}}
     snap = graph.get_state(config)
-    if not snap.next:
-        raise HTTPException(404, "Thread not found or already completed")
+
+    if not snap.values:
+        raise HTTPException(
+            status_code=404,
+            detail="Review thread not found",
+        )
+
+    if "apply_changes_node" not in snap.next:
+        raise HTTPException(
+            status_code=409,
+            detail="Review is not waiting for approval",
+        )
 
     if body.approved:
-        graph.update_state(config, {"is_approved": True})
+        graph.update_state(
+            config,
+            {
+                "is_approved": True,
+            },
+        )
     else:
-        # Roll back to the lint node so the graph reruns
-        # propose_refactor_node.
+        feedback = (
+            body.feedback.strip()
+            if body.feedback and body.feedback.strip()
+            else "Please improve the refactored code"
+        )
+
         graph.update_state(
             config,
             {
                 "is_approved": False,
-                "reviewer_feedback": (body.feedback or "Please improve the refactor"),
+                "reviewer_feedback": feedback,
             },
             as_node="lint_code_node",
         )
-    graph.invoke(None, config)
+
+    try:
+        graph.invoke(None, config)
+    except Exception as error:
+        logger.exception("Review resume failed")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Review resume failed: {type(error).__name__}",
+        ) from error
+
     return _summary(thread_id, config)
