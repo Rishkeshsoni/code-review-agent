@@ -1,19 +1,19 @@
 # Autonomous Code Review & Refactoring Agent
 
-An automated code review and refactoring agent built using Python, LangGraph, and FastAPI. It follows a structured workflow to analyze code, identify linting issues, format code, and apply changes only after human approval.
+An automated code review and refactoring agent built using **Python, LangGraph, and FastAPI**. It analyzes Python code, detects quality issues, formats code, and applies approved changes through a Human-in-the-Loop workflow.
 
 ## Features
 
-- Automated code review workflow using LangGraph
-- Code quality checks using Flake8
+- LangGraph-based automated review workflow
+- Code quality analysis using Flake8, Black, and Pylint
 - Automated code formatting using Black
-- Human-in-the-loop approval before applying changes
+- Human-in-the-Loop approval before applying changes
 - Feedback-based review and retry workflow
-- Rollback support for rejected changes
+- Checkpointing and rollback support
 - GitHub integration using PyGithub
-- REST API endpoints using FastAPI
+- REST API using FastAPI
 - Demo mode without API credentials
-- Unit testing using Pytest
+- Automated tests using Pytest
 
 ## Tech Stack
 
@@ -24,17 +24,39 @@ An automated code review and refactoring agent built using Python, LangGraph, an
 - OpenAI API
 - Flake8
 - Black
+- Pylint
+- SQLite Checkpointer
 - Pytest
 
-## Project Architecture
+## Project Workflow
 
-1. Receive a repository URL and branch through the API.
-2. Fetch code for review.
-3. Analyze code and identify quality issues.
-4. Format code using Black.
-5. Pause for human approval.
-6. Accept feedback and retry the review when required.
-7. Apply approved changes through the configured workflow.
+1. Receive repository URL and branch through the API.
+2. Fetch Python code from the target repository.
+3. Analyze code using linting tools.
+4. Generate formatted or refactored code.
+5. Pause the workflow for human approval.
+6. Accept reviewer feedback and retry when changes are rejected.
+7. Commit approved changes to GitHub when credentials are configured.
+
+## Project Structure
+
+```text
+code-review-agent/
+├── app/
+│   ├── state.py
+│   ├── nodes.py
+│   ├── graph.py
+│   ├── tools.py
+│   └── github_client.py
+├── tests/
+├── configs/
+├── main.py
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── openapi.json
+└── README.md
+```
 
 ## Project Setup
 
@@ -51,9 +73,9 @@ cd code-review-agent
 python -m venv venv
 ```
 
-### 3. Activate the Virtual Environment
+### 3. Activate the Environment
 
-For Windows PowerShell:
+**Windows PowerShell:**
 
 ```powershell
 .\venv\Scripts\Activate.ps1
@@ -74,43 +96,56 @@ GITHUB_TOKEN=your_github_token
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-These credentials are optional for running the application in demo mode.
+Both credentials are optional for demo mode. Never commit actual credentials.
 
 ## Run the Application
 
 ```bash
-uvicorn main:app
+uvicorn main:app --reload
 ```
 
-Open Swagger UI:
+**Swagger UI:**
 
 http://127.0.0.1:8000/docs
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/webhooks/github` | Starts a code review workflow |
+| POST | `/api/reviews/{thread_id}/approve` | Approves or rejects proposed changes |
 
 ## Run Tests
 
 ```bash
-pytest
+python -m pytest -v
 ```
 
-## API Documentation
+The test suite covers lint error detection, rejection and retry workflow, and approval workflow.
 
-The project includes an exported OpenAPI specification in `openapi.json`.
+## Human-in-the-Loop Workflow
+
+The LangGraph workflow uses checkpointing to pause before applying changes. A reviewer can approve proposed changes or reject them with feedback. Rejected proposals are sent back through the review workflow.
 
 ## Demo Mode
 
-The application supports demo mode when API credentials are not configured. It uses sample code to demonstrate the review, formatting, approval, and feedback workflow.
+The application supports demo mode without API credentials and uses sample code to demonstrate the workflow.
 
-**Note:** In demo mode, changes are not pushed to GitHub. A successful GitHub commit requires the appropriate GitHub configuration.
+Without an OpenAI API key, the fallback uses Black formatting rather than semantic AI-powered refactoring. Without GitHub credentials, changes are not committed to GitHub.
+
+## API Documentation
+
+The exported OpenAPI specification is available in `openapi.json`.
 
 ## Future Improvements
 
-- More advanced AI-powered code suggestions
 - Support for additional programming languages
-- Improved automated refactoring
-- Enhanced GitHub pull request integration
+- More advanced code analysis and security checks
+- Enhanced GitHub Pull Request integration
+- Improved refactoring suggestions and test coverage
 
 ## Author
 
 **Rishikesh Soni**
 
-GitHub: [Rishkeshsoni](https://github.com/Rishkeshsoni)
+GitHub: https://github.com/Rishkeshsoni
