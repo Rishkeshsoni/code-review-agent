@@ -1,13 +1,13 @@
 # Autonomous Code Review & Refactoring Agent
 
-An automated code review and refactoring agent built using Python, LangGraph, and FastAPI. It analyzes Python code, detects quality issues, formats code, and applies approved changes through a human-in-the-loop workflow.
+An automated code review and refactoring agent built using **Python, LangGraph, and FastAPI**. It analyzes Python code, detects quality issues, formats code, and applies approved changes through a Human-in-the-Loop workflow.
 
 ## Features
 
 - LangGraph-based automated review workflow
 - Code quality analysis using Flake8, Black, and Pylint
 - Automated code formatting using Black
-- Human-in-the-loop approval before applying changes
+- Human-in-the-Loop approval before applying changes
 - Feedback-based review and retry workflow
 - Checkpointing and rollback support
 - GitHub integration using PyGithub
@@ -75,7 +75,7 @@ python -m venv venv
 
 ### 3. Activate the Environment
 
-Windows PowerShell:
+**Windows PowerShell:**
 
 ```powershell
 .\venv\Scripts\Activate.ps1
@@ -104,7 +104,7 @@ Both credentials are optional for demo mode. Never commit actual credentials.
 uvicorn main:app --reload
 ```
 
-Swagger UI:
+**Swagger UI:**
 
 http://127.0.0.1:8000/docs
 
@@ -125,7 +125,7 @@ The test suite covers lint error detection, rejection and retry workflow, and ap
 
 ## Human-in-the-Loop Workflow
 
-The LangGraph workflow uses checkpointing to pause before applying changes. A reviewer can approve the proposed changes or reject them with feedback. Rejected changes are sent back through the review workflow.
+The LangGraph workflow uses checkpointing to pause before applying changes. A reviewer can approve proposed changes or reject them with feedback. Rejected proposals are sent back through the review workflow.
 
 ## Demo Mode
 
@@ -139,10 +139,10 @@ The exported OpenAPI specification is available in `openapi.json`.
 
 ## Future Improvements
 
-- More advanced AI-powered code suggestions
 - Support for additional programming languages
-- Enhanced GitHub pull request integration
-- Improved refactoring and security checks
+- More advanced code analysis and security checks
+- Enhanced GitHub Pull Request integration
+- Improved refactoring suggestions and test coverage
 
 ## Author
 
