@@ -46,7 +46,7 @@ def validate_python_code(code_string: str) -> dict:
             "output": "ERROR: Empty Python code",
         }
 
-    if len(code_string) > 100000:
+    if len(code_string.encode("utf-8")) > 100000:
         return {
             "passed": False,
             "output": "ERROR: Code exceeds the 100 KB limit",
