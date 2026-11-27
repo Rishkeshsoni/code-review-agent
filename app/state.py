@@ -9,7 +9,8 @@ class ReviewState(TypedDict, total=False):
     is_approved: bool
     reviewer_feedback: str
     history: List[str]
-    # extra helper keys
+    validation_passed: bool
+    refactor_attempts: int
     repo_url: str
     branch: str
     pr_number: int

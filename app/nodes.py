@@ -6,9 +6,11 @@ import os
 import black
 
 from app.github_client import commit_file, fetch_python_file
-from app.tools import run_linter_tool
+from app.tools import validate_python_code
 
 logger = logging.getLogger("agent")
+
+MAX_REFACTOR_ATTEMPTS = 3
 
 SAMPLE_CODE = """import os,sys
 
@@ -44,7 +46,9 @@ def fetch_pr_node(state):
     if not os.getenv("GITHUB_TOKEN"):
         path = "sample.py"
         content = SAMPLE_CODE
-        history.append("Demo mode: GITHUB_TOKEN missing; using sample code")
+        history.append(
+            "Demo mode: GITHUB_TOKEN missing; using sample code"
+        )
     else:
         path, content = fetch_python_file(
             state["repo_url"],
@@ -59,6 +63,7 @@ def fetch_pr_node(state):
         "file_path": path,
         "code_contents": content,
         "history": history,
+        "refactor_attempts": 0,
     }
 
 
@@ -67,14 +72,18 @@ def lint_code_node(state):
 
     code = state.get("refactored_code") or state["code_contents"]
 
-    errors = run_linter_tool.invoke(
-        {"code_string": code}
-    )
+    result = validate_python_code(code)
 
     history.append("Flake8, Black and Pylint checks completed")
 
+    if result["passed"]:
+        history.append("Code validation PASSED")
+    else:
+        history.append("Code validation FAILED")
+
     return {
-        "lint_errors": errors,
+        "lint_errors": result["output"],
+        "validation_passed": result["passed"],
         "history": history,
     }
 
@@ -86,17 +95,15 @@ def propose_refactor_node(state):
     feedback = state.get("reviewer_feedback", "")
     previous_draft = state.get("refactored_code", "")
 
-    if feedback and previous_draft:
+    if previous_draft:
         code = previous_draft
     else:
         code = original_code
 
-    attempt = (
-        len([
-            item for item in history
-            if item.startswith("Refactor proposed")
-        ]) + 1
-    )
+    attempt = state.get("refactor_attempts", 0) + 1
+
+    if attempt > MAX_REFACTOR_ATTEMPTS:
+        raise ValueError("Maximum refactoring attempts exceeded")
 
     if os.getenv("OPENAI_API_KEY"):
         from langchain_openai import ChatOpenAI
@@ -113,7 +120,7 @@ Improve the current Python code.
 
 Requirements:
 1. Fix all reported lint errors.
-2. Follow the reviewer feedback carefully.
+2. Follow reviewer feedback carefully.
 3. Preserve the original program functionality.
 4. Do not remove important functionality.
 5. Return complete Python source code only.
@@ -172,12 +179,19 @@ CURRENT CODE TO IMPROVE:
 
     return {
         "refactored_code": new_code,
+        "refactor_attempts": attempt,
         "history": history,
     }
 
 
 def apply_changes_node(state):
     history = list(state.get("history", []))
+
+    if not state.get("validation_passed", False):
+        history.append(
+            "Changes blocked: code validation did not pass"
+        )
+        return {"history": history}
 
     if not state.get("is_approved"):
         history.append("Not approved: no changes committed")
@@ -198,7 +212,9 @@ def apply_changes_node(state):
             "refactor: apply AI-reviewed changes",
         )
 
-        history.append("Successfully committed refactored code to GitHub")
+        history.append(
+            "Successfully committed refactored code to GitHub"
+        )
 
     except Exception as error:
         logger.exception("GitHub commit failed")
